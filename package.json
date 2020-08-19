@@ -1,0 +1,32 @@
+{
+  "name": "basic-income-coin",
+  "version": "1.0.0",
+  "description": "This is [Zoe](https://agoric.com/documentation/zoe/guide/#what-is-zoe) smart contract implementing a currency. Participation to this currency means receiving regularly some amount of this currency (\"basic income\")",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "tap --no-coverage --jobs=1 --timeout 600 'test/**/test-*.js'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DavidBruant/basic-income-coin.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "CC0-1.0",
+  "bugs": {
+    "url": "https://github.com/DavidBruant/basic-income-coin/issues"
+  },
+  "homepage": "https://github.com/DavidBruant/basic-income-coin#readme",
+  "dependencies": {
+    "@agoric/assert": "0.0.8",
+    "@agoric/bundle-source": "^1.1.6",
+    "@agoric/eventual-send": "^0.9.3",
+    "@agoric/harden": "^0.1.0",
+    "@agoric/install-ses": "^0.2.0",
+    "@agoric/zoe": "^0.7.0",
+    "tape-promise": "^4.0.0"
+  }
+}

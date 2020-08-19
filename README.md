@@ -25,6 +25,6 @@ This creates a per-account ceiling of amount that cannot be pierced in the long 
 
 ## Expectations and licence
 
-i, David Bruant, expect to be credited from this work
+i, David Bruant, expect to be credited for this work
 
 As far as legal considerations, this work is CC0-licenced (Public Domain)
