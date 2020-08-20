@@ -14,12 +14,12 @@ As a consequence, it cannot be simply a mint with purses. Some notion of "person
 I'm keeping the identity system and the verification that one person cannot have several acccounts out of this contract
 
 
-## Second iteration
+## Future iterations
 
-The currency melts at a regular rate (like -1% per month)
-
-This creates a per-account ceiling of amount that cannot be pierced in the long term
-
+- The currency melts at a regular rate (like -1% per month). This creates a per-account soft-ceiling of amount. If someone goes above, the amount decreases gradually towards the soft-ceiling
+- The community can "vote" on changes (on the basic income amount or melting rate)
+- A hard-ceiling on the per-account amount is set. Above, money is either destroyed or re-distributed; rules for separation and redistribution are first hardcoded
+    - later, they can be configured
 
 
 

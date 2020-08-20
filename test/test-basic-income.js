@@ -35,39 +35,37 @@ const zoe = makeZoe(fakeVatAdmin);
 // inspired from https://github.com/Agoric/agoric-sdk/blob/15f2d5dc04ccc85efdfb221b5cb15b475265defa/packages/zoe/test/unitTests/contracts/test-simpleExchange.js
 
 test('simpleExchange with valid offers', async t => {
-  t.plan(2);
   try {
-    const zoe = makeZoe(fakeVatAdmin);
     // Pack the contract.
     const bundle = await bundleSource(basicIncomeContractSourceCode);
     const installationHandle = await E(zoe).install(bundle);
-    const inviteIssuer = await E(zoe).getInviteIssuer();
+    //const inviteIssuer = await E(zoe).getInviteIssuer();
 
-    // Alice creates a contract instance
     const {
       instanceRecord: { publicAPI },
     } = await E(zoe).makeInstance(installationHandle);
 
-    // Bob wants to get 1000 tokens so he gets an invite and makes an
-    // offer
-    const invite = await E(publicAPI).makeInvite();
-    t.ok(await E(inviteIssuer).isLive(invite), `valid invite`);
-    const { payout: payoutP } = await E(zoe).offer(invite);
+    const accountInvite = await E(publicAPI).makeAccountInvite();
+    const issuer = await E(publicAPI).getBasicIncomeIssuer();
+    const amountMath = issuer.getAmountMath()
 
-    // Bob's payout promise resolves
-    const bobPayout = await payoutP;
-    const bobTokenPayout = await bobPayout.Token;
+    // Create an account
+    const { payout: accountP } = await E(zoe).offer(accountInvite);
 
-    // Let's get the tokenIssuer from the contract so we can evaluate
-    // what we get as our payout
-    const tokenIssuer = await E(publicAPI).getTokenIssuer();
-    const amountMath = await E(tokenIssuer).getAmountMath();
+    const account = await accountP;
 
-    const tokens1000 = await E(amountMath).make(1000);
-    const tokenPayoutAmount = await E(tokenIssuer).getAmountOf(bobTokenPayout);
+    // The account is initially empty
+    t.ok(amountMath.isEmpty(account.getCurrentAmount()))
 
-    // Bob got 1000 tokens
-    t.deepEquals(tokenPayoutAmount, tokens1000);
+    // wait a bit more than a second and notice the account is not empty anymore
+    await new Promise(resolve => {
+      setTimeout(() => {
+        t.ok(amountMath.isGTE(account.getCurrentAmount(), amountMath.make(1)));
+        resolve();
+      }, 1100)
+    })
+
+    t.pass()
   } catch (e) {
     t.assert(false, e);
     console.log(e);
