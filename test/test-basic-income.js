@@ -41,30 +41,42 @@ test('simpleExchange with valid offers', async t => {
     const installationHandle = await E(zoe).install(bundle);
     //const inviteIssuer = await E(zoe).getInviteIssuer();
 
+    let interval;
+
     const {
       instanceRecord: { publicAPI },
-    } = await E(zoe).makeInstance(installationHandle);
+    } = await E(zoe).makeInstance(installationHandle, {}, {incomeTick(onTick){
+      interval = setInterval(onTick, 1000)
+    }});
 
     const accountInvite = await E(publicAPI).makeAccountInvite();
-    const issuer = await E(publicAPI).getBasicIncomeIssuer();
-    const amountMath = issuer.getAmountMath()
+    const accountIssuer = await E(publicAPI).getAccountIssuer();
+    const coinIssuer = await E(publicAPI).getCoinIssuer();
+    const coinAmountMath = coinIssuer.getAmountMath()
+    
+
 
     // Create an account
-    const { payout: accountP } = await E(zoe).offer(accountInvite);
+    const { payout: accountPaymentP } = await E(zoe).offer(accountInvite);
 
-    const account = await accountP;
+    const {'Account': accountPayment} = await accountPaymentP;
+    const accountPaymentAmount = await accountIssuer.getAmountOf(accountPayment)
+
+    const [account] = accountIssuer.getAmountMath().getExtent(accountPaymentAmount);
 
     // The account is initially empty
-    t.ok(amountMath.isEmpty(account.getCurrentAmount()))
+    t.ok(coinAmountMath.isEmpty(account.getCurrentAmount()))
 
     // wait a bit more than a second and notice the account is not empty anymore
     await new Promise(resolve => {
       setTimeout(() => {
-        t.ok(amountMath.isGTE(account.getCurrentAmount(), amountMath.make(1)));
         resolve();
+        t.ok(coinAmountMath.isGTE(account.getCurrentAmount(), coinAmountMath.make(1)));
+        
       }, 1100)
     })
 
+    clearInterval(interval)
     t.pass()
   } catch (e) {
     t.assert(false, e);

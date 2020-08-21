@@ -5,72 +5,81 @@ import makeIssuerKit from '@agoric/ertp';
 import { makeZoeHelpers } from '@agoric/zoe/src/contractSupport';
 
 
+function makeAccount(coinPurse){
+  // TODO
+  // maybe it's exactly a purse, maybe not
+  return coinPurse
+}
+
+function makeBasicIncomeCoinIssuer(coinIssuer){
+  // TODO
+  // at least remove makeEmptyPurse
+  return coinIssuer
+}
+
 /**
- * This is a very simple contract that creates a new issuer and mints payments
- * from it, in order to give an example of how that can be done.  This contract
- * sends new tokens to anyone who requests them.
- *
- * Offer safety is not enforced here: the expectation is that most contracts
- * that want to do something similar would use the ability to mint new payments
- * internally rather than sharing that ability widely as this one does.
- *
- * makeInstance returns an invitation that, when exercised, provides 1000 of the
- * new tokens. await E(publicAPI).makeInvite() returns an invitation that accepts an
- * empty offer and provides 1000 tokens.
+ * This is a very simple contract ... (TODO)
  */
 const makeContract = zcf => {
-  // Create the internal token mint for a fungible digital asset
-  const { issuer, mint, amountMath } = makeIssuerKit('tokens');
-
   const zoeHelpers = makeZoeHelpers(zcf);
 
+  const { terms: {incomeTick} } = zcf.getInstanceRecord()
+
+  // Create the internal mint for a fungible digital asset
+  const { issuer: coinIssuer, mint: coinMint, amountMath: coinAmountMath } = makeIssuerKit('basic-income-coin', 'nat');
+
+  // Create the internal account mint
+  const { issuer: accountIssuer, mint: accountMint, amountMath: accountAmountMath } = makeIssuerKit('basic-income-coin-account', 'set');
+
+  const allAccounts = new Set()
+
+  // Implement basic income
+  incomeTick(() => {
+    for(const account of allAccounts){
+      account.deposit(coinMint.mintPayment(coinAmountMath.make(1)))
+    }
+  });
+
+
   // We need to tell Zoe about this issuer and add a keyword for the
-  // issuer. Let's call this the 'Token' issuer.
-  return zcf.addNewIssuer(issuer, 'Token').then(() => {
+  // issuer. Let's call this the 'Account' issuer.
+  return zcf.addNewIssuer(accountIssuer, 'Account').then(() => {
     // We need to wait for the promise to resolve (meaning that Zoe
     // has done the work of adding a new issuer).
-    const offerHook = offerHandle => {
-      // We will send everyone who makes an offer 1000 tokens
+    const offerHook = async offerHandle => {
+      const newAccount = makeAccount(coinIssuer.makeEmptyPurse());
+      allAccounts.add(newAccount)
 
-      const tokens1000 = amountMath.make(1000);
-      const payment = mint.mintPayment(tokens1000);
-
-      // Let's use a helper function which escrows the payment with
-      // Zoe, and reallocates to the recipientHandle.
+      const newAccountPayment = accountMint.mintPayment(accountAmountMath.make(harden([newAccount])));
+      
       return zoeHelpers
         .escrowAndAllocateTo({
-          amount: tokens1000,
-          payment,
-          keyword: 'Token',
+          amount: await accountIssuer.getAmountOf(newAccountPayment),
+          payment: newAccountPayment,
+          keyword: 'Account',
           recipientHandle: offerHandle,
         })
         .then(() => {
-          // Complete the user's offer so that the user gets a payout
           zcf.complete(harden([offerHandle]));
-
-          // Since the user is getting the payout through Zoe, we can
-          // return anything here. Let's return some helpful instructions.
           return 'Offer completed. You should receive a payment from Zoe';
         });
     };
 
     // A function for making invites to this contract
-    const makeInvite = () => zcf.makeInvitation(offerHook, 'mint a payment');
+    const makeAccountInvite = () => zcf.makeInvitation(offerHook, 'make an account');
 
     zcf.initPublicAPI(
       harden({
-        // provide a way for anyone who knows the instanceHandle of
-        // the contract to make their own invite.
-        makeInvite,
-        // make the token issuer public. Note that only the mint can
-        // make new digital assets. The issuer is ok to make public.
-        getTokenIssuer: () => issuer,
+        // in this contract, making invites is public. But might not be
+        makeAccountInvite,
+        getAccountIssuer: () => accountIssuer,
+        getCoinIssuer: () => makeBasicIncomeCoinIssuer(coinIssuer)
       }),
     );
 
     // return an invite to the creator of the contract instance
     // through Zoe
-    return makeInvite();
+    return makeAccountInvite();
   });
 };
 
