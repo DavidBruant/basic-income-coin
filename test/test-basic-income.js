@@ -45,16 +45,17 @@ test('simpleExchange with valid offers', async t => {
 
     const {
       instanceRecord: { publicAPI },
-    } = await E(zoe).makeInstance(installationHandle, {}, {incomeTick(onTick){
-      interval = setInterval(onTick, 1000)
-    }});
+    } = await E(zoe).makeInstance(installationHandle, {}, {
+      incomeTick(onTick){
+        interval = setInterval(onTick, 1000)
+      },
+      incomePerTick: 1
+    });
 
     const accountInvite = await E(publicAPI).makeAccountInvite();
     const accountIssuer = await E(publicAPI).getAccountIssuer();
     const coinIssuer = await E(publicAPI).getCoinIssuer();
     const coinAmountMath = coinIssuer.getAmountMath()
-    
-
 
     // Create an account
     const { payout: accountPaymentP } = await E(zoe).offer(accountInvite);

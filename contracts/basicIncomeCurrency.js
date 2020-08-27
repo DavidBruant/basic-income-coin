@@ -23,7 +23,7 @@ function makeBasicIncomeCoinIssuer(coinIssuer){
 const makeContract = zcf => {
   const zoeHelpers = makeZoeHelpers(zcf);
 
-  const { terms: {incomeTick} } = zcf.getInstanceRecord()
+  const { terms: {incomeTick, incomePerTick} } = zcf.getInstanceRecord()
 
   // Create the internal mint for a fungible digital asset
   const { issuer: coinIssuer, mint: coinMint, amountMath: coinAmountMath } = makeIssuerKit('basic-income-coin', 'nat');
@@ -36,7 +36,7 @@ const makeContract = zcf => {
   // Implement basic income
   incomeTick(() => {
     for(const account of allAccounts){
-      account.deposit(coinMint.mintPayment(coinAmountMath.make(1)))
+      account.deposit(coinMint.mintPayment(coinAmountMath.make(incomePerTick)))
     }
   });
 
