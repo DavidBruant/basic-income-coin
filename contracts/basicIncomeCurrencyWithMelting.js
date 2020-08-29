@@ -5,13 +5,25 @@ import makeIssuerKit from '@agoric/ertp';
 import { makeZoeHelpers } from '@agoric/zoe/src/contractSupport';
 
 
+function makeAccount(coinPurse){
+  // TODO
+  // maybe it's exactly a purse, maybe not
+  return coinPurse
+}
+
+function makeBasicIncomeCoinIssuer(coinIssuer){
+  // TODO
+  // at least remove makeEmptyPurse
+  return coinIssuer
+}
+
 /**
  * This is a very simple contract ... (TODO)
  */
 const makeContract = zcf => {
   const zoeHelpers = makeZoeHelpers(zcf);
 
-  const { terms: {incomeTick, incomePerTick} } = zcf.getInstanceRecord()
+  const { terms: {currencyTick, incomePerTick, meltingRate} } = zcf.getInstanceRecord()
 
   // Create the internal mint for a fungible digital asset
   const { issuer: coinIssuer, mint: coinMint, amountMath: coinAmountMath } = makeIssuerKit('basic-income-coin', 'nat');
@@ -22,8 +34,17 @@ const makeContract = zcf => {
   const allAccounts = new Set()
 
   // Implement basic income
-  incomeTick(() => {
+  currencyTick(() => {
     for(const account of allAccounts){
+      // melt 
+      const currentAccountAmount = coinAmountMath.getExtent(account.getCurrentAmount())
+      const meltedAmount = coinAmountMath.make( Math.round(currentAccountAmount * meltingRate) )
+      const meltPayment = account.withdraw(meltedAmount)
+
+      // melted currency is destroyed
+      coinIssuer.burn(meltPayment)
+
+      // add basic income
       account.deposit(coinMint.mintPayment(coinAmountMath.make(incomePerTick)))
     }
   });
@@ -35,7 +56,7 @@ const makeContract = zcf => {
     // We need to wait for the promise to resolve (meaning that Zoe
     // has done the work of adding a new issuer).
     const offerHook = async offerHandle => {
-      const newAccount = coinIssuer.makeEmptyPurse();
+      const newAccount = makeAccount(coinIssuer.makeEmptyPurse());
       allAccounts.add(newAccount)
 
       const newAccountPayment = accountMint.mintPayment(accountAmountMath.make(harden([newAccount])));
@@ -61,7 +82,7 @@ const makeContract = zcf => {
         // in this contract, making invites is public. But might not be
         makeAccountInvite,
         getAccountIssuer: () => accountIssuer,
-        getCoinIssuer: () => coinIssuer
+        getCoinIssuer: () => makeBasicIncomeCoinIssuer(coinIssuer)
       }),
     );
 
